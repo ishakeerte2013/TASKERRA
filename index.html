@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>TASKERRA | Your Journey Begins</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Nunito:ital,wght@0,400;0,600;0,700;1,600;1,700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<header id="welcomeHeader">
+		<h1>TASKERRA</h1>
+		<p class="tagline">Your life. Your missions. Your journey.</p>
+	</header>
+
+	<main id="welcomeMain">
+		<h2>Every journey begins with <span>one step</span>.</h2>
+		<p>Turn your everyday tasks into exciting missions.</p>
+		<button id="startButton" type="button">Start Your Journey</button>
+	</main>
+
+	<section id="dashboardScreen" class="dashboard-screen" aria-labelledby="dashboardTitle" hidden>
+		<div class="dashboard-shell">
+			<div class="dashboard-topbar">
+				<a class="dashboard-brand" href="#home" aria-label="TASKERRA home">TASKERRA</a>
+				<a class="dashboard-nav-link" href="#exploreSection">Explore</a>
+				<button id="homeButton" class="back-home" type="button">Back to Home</button>
+			</div>
+
+			<div class="dashboard-intro">
+				<p class="dashboard-eyebrow">YOUR ADVENTURE STARTS HERE</p>
+				<h1 id="dashboardTitle">Welcome, Explorer!</h1>
+			</div>
+
+			<section class="destination-card" aria-labelledby="destinationTitle">
+				<p class="destination-current">Your Current Destination: <span id="currentDestinationName">India</span> <span id="destinationFlag" role="img" aria-label="Flag of India">🇮🇳</span></p>
+				<h2 id="destinationTitle">India</h2>
+				<p id="destinationIntroduction">Follow Himalayan trails through quiet mountain villages, prayer flags, and breathtaking high-altitude views.</p>
+			</section>
+
+			<section class="progress-panel" aria-label="Level and experience progress">
+				<div class="progress-summary">
+					<div class="progress-stat">
+						<span class="stat-label">Current level</span>
+						<strong id="currentLevel">1</strong>
+					</div>
+					<div class="progress-stat xp-stat">
+						<span class="stat-label">Total experience</span>
+						<strong><span id="currentXp">0</span> XP</strong>
+					</div>
+				</div>
+				<div class="level-progress-track" id="levelProgressTrack" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+					<span id="levelProgressBar"></span>
+				</div>
+				<p id="levelProgressText" class="level-progress-text">0 / 100 XP to next level</p>
+			</section>
+
+			<section class="missions-section" aria-labelledby="missionsTitle">
+				<div class="mission-heading-row">
+					<div class="section-heading">
+						<p class="dashboard-eyebrow">TODAY'S ROUTE</p>
+						<h2 id="missionsTitle">Today's Missions</h2>
+					</div>
+					<button id="addMissionButton" class="add-mission-button" type="button"><span aria-hidden="true">+</span> Add Mission</button>
+				</div>
+				<ul id="missionList" class="mission-list">
+					<li class="mission-item">
+						<label>
+							<input type="checkbox" data-mission-id="plan-route" data-xp="20">
+							<span class="mission-copy"><strong>Plan your route</strong><span>Choose your first priority for today.</span></span>
+							<span class="mission-reward">+20 XP</span>
+						</label>
+					</li>
+					<li class="mission-item">
+						<label>
+							<input type="checkbox" data-mission-id="take-a-break" data-xp="30">
+							<span class="mission-copy"><strong>Take a mindful break</strong><span>Step away and recharge for a moment.</span></span>
+							<span class="mission-reward">+30 XP</span>
+						</label>
+					</li>
+					<li class="mission-item">
+						<label>
+							<input type="checkbox" data-mission-id="finish-a-task" data-xp="50">
+							<span class="mission-copy"><strong>Complete one important task</strong><span>Make progress on something that matters.</span></span>
+							<span class="mission-reward">+50 XP</span>
+						</label>
+					</li>
+				</ul>
+			</section>
+
+			<dialog id="missionDialog" class="mission-dialog" aria-labelledby="missionDialogTitle">
+				<form id="missionForm" class="mission-form">
+					<div class="mission-form-header">
+						<div>
+							<p class="dashboard-eyebrow">A NEW STEP FORWARD</p>
+							<h2 id="missionDialogTitle">Add a Mission</h2>
+						</div>
+						<button id="closeMissionDialog" class="mission-dialog-close" type="button" aria-label="Close form">&times;</button>
+					</div>
+
+					<label class="mission-field">
+						<span>Mission title <span aria-hidden="true">*</span></span>
+						<input id="missionTitle" name="title" type="text" maxlength="80" placeholder="e.g. Read one chapter" required>
+					</label>
+
+					<label class="mission-field">
+						<span>Short description <span class="optional-label">(optional)</span></span>
+						<textarea id="missionDescription" name="description" maxlength="180" rows="3" placeholder="What would you like to accomplish?"></textarea>
+					</label>
+
+					<div class="mission-form-row">
+						<label class="mission-field">
+							<span>Category</span>
+							<select id="missionCategory" name="category">
+								<option>Study</option>
+								<option>Personal</option>
+								<option>Fitness</option>
+								<option>Hobbies</option>
+								<option selected>Other</option>
+							</select>
+						</label>
+						<label class="mission-field">
+							<span>Difficulty</span>
+							<select id="missionDifficulty" name="difficulty">
+								<option value="Easy">Easy · 10 XP</option>
+								<option value="Medium" selected>Medium · 20 XP</option>
+								<option value="Hard">Hard · 30 XP</option>
+							</select>
+						</label>
+					</div>
+
+					<div class="mission-form-actions">
+						<button id="cancelMissionButton" class="mission-cancel-button" type="button">Cancel</button>
+						<button class="mission-submit-button" type="submit">Save Mission</button>
+					</div>
+				</form>
+			</dialog>
+
+			<section id="exploreSection" class="explore-section" aria-labelledby="exploreTitle">
+				<div class="explore-heading">
+					<p class="dashboard-eyebrow">BEYOND THE HORIZON</p>
+					<h2 id="exploreTitle">Explore the World</h2>
+					<p>Choose a destination and discover what awaits.</p>
+				</div>
+
+				<div class="destination-grid" aria-label="World destinations">
+					<button id="indiaDestinationButton" class="country-tile is-unlocked" type="button" aria-expanded="false" aria-controls="indiaInfoPanel">
+						<span class="country-art country-art--india" aria-hidden="true"></span>
+						<span class="country-tile-info">
+							<span class="country-name"><span aria-hidden="true">🇮🇳</span> India</span>
+							<span class="country-status">Unlocked</span>
+						</span>
+					</button>
+					<article class="country-tile is-locked" aria-label="Japan, locked destination">
+						<span class="country-art country-art--japan" aria-hidden="true"></span>
+						<span class="country-tile-info">
+							<span class="country-name"><span aria-hidden="true">🇯🇵</span> Japan</span>
+							<span class="country-status">Locked</span>
+						</span>
+					</article>
+					<article class="country-tile is-locked" aria-label="Switzerland, locked destination">
+						<span class="country-art country-art--switzerland" aria-hidden="true"></span>
+						<span class="country-tile-info">
+							<span class="country-name"><span aria-hidden="true">🇨🇭</span> Switzerland</span>
+							<span class="country-status">Locked</span>
+						</span>
+					</article>
+					<article class="country-tile is-locked" aria-label="Egypt, locked destination">
+						<span class="country-art country-art--egypt" aria-hidden="true"></span>
+						<span class="country-tile-info">
+							<span class="country-name"><span aria-hidden="true">🇪🇬</span> Egypt</span>
+							<span class="country-status">Locked</span>
+						</span>
+					</article>
+					<article class="country-tile is-locked" aria-label="Indonesia, locked destination">
+						<span class="country-art country-art--indonesia" aria-hidden="true"></span>
+						<span class="country-tile-info">
+							<span class="country-name"><span aria-hidden="true">🇮🇩</span> Indonesia</span>
+							<span class="country-status">Locked</span>
+						</span>
+					</article>
+				</div>
+
+				<p class="locked-destinations-note">Japan, Switzerland, Egypt, and Indonesia are locked for now. More destinations will open in a future update.</p>
+
+				<section id="indiaInfoPanel" class="destination-info-panel" aria-labelledby="indiaInfoTitle" hidden>
+					<div class="destination-info-header">
+						<div>
+							<p class="dashboard-eyebrow">DESTINATION GUIDE</p>
+							<h3 id="indiaInfoTitle"><span aria-hidden="true">🇮🇳</span> India</h3>
+						</div>
+						<button id="closeIndiaInfo" class="destination-close" type="button" aria-label="Close India information">&times;</button>
+					</div>
+					<p class="destination-summary">From Himalayan peaks to vibrant cities, India is a land of remarkable landscapes, deep history, and many living traditions.</p>
+					<div class="destination-facts">
+						<div class="destination-stat"><span>Capital</span><strong>New Delhi</strong></div>
+						<div class="destination-stat"><span>Currency</span><strong>Indian Rupee (INR)</strong></div>
+					</div>
+					<div class="interesting-facts">
+						<h4>Along the way</h4>
+						<ul>
+							<li>The Himalayas in northern India include some of the world's highest mountain peaks.</li>
+							<li>India is home to the world's largest film industry by number of films produced.</li>
+							<li>Chess and the game of snakes and ladders both have roots in India.</li>
+						</ul>
+					</div>
+				</section>
+			</section>
+		</div>
+	</section>
+
+	<script src="script.js"></script>
+</body>
+</html>
+
+
