@@ -54,7 +54,8 @@
 				<div class="level-progress-track" id="levelProgressTrack" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
 					<span id="levelProgressBar"></span>
 				</div>
-				<p id="levelProgressText" class="level-progress-text">0 / 100 XP to next level</p>
+				<p id="levelProgressText" class="level-progress-text">0 / 100 XP this level | 100 XP to Level 2</p>
+				<p id="levelUpMessage" class="level-up-message" role="status" aria-live="polite" hidden>Level Up! New adventures await!</p>
 			</section>
 
 			<section class="missions-section" aria-labelledby="missionsTitle">
@@ -65,29 +66,104 @@
 					</div>
 					<button id="addMissionButton" class="add-mission-button" type="button"><span aria-hidden="true">+</span> Add Mission</button>
 				</div>
-				<ul id="missionList" class="mission-list">
-					<li class="mission-item">
-						<label>
-							<input type="checkbox" data-mission-id="plan-route" data-xp="20">
-							<span class="mission-copy"><strong>Plan your route</strong><span>Choose your first priority for today.</span></span>
-							<span class="mission-reward">+20 XP</span>
-						</label>
-					</li>
-					<li class="mission-item">
-						<label>
-							<input type="checkbox" data-mission-id="take-a-break" data-xp="30">
-							<span class="mission-copy"><strong>Take a mindful break</strong><span>Step away and recharge for a moment.</span></span>
-							<span class="mission-reward">+30 XP</span>
-						</label>
-					</li>
-					<li class="mission-item">
-						<label>
-							<input type="checkbox" data-mission-id="finish-a-task" data-xp="50">
-							<span class="mission-copy"><strong>Complete one important task</strong><span>Make progress on something that matters.</span></span>
-							<span class="mission-reward">+50 XP</span>
-						</label>
-					</li>
-				</ul>
+
+				<section class="mission-calendar" aria-label="Mission flight calendar">
+					<div class="calendar-map-art" aria-hidden="true">
+						<span class="calendar-continent calendar-continent--north"></span>
+						<span class="calendar-continent calendar-continent--south"></span>
+						<span class="calendar-continent calendar-continent--europe"></span>
+						<span class="calendar-continent calendar-continent--asia"></span>
+						<span class="calendar-continent calendar-continent--africa"></span>
+						<span class="calendar-flight-path calendar-flight-path--one"></span>
+						<span class="calendar-flight-path calendar-flight-path--two"></span>
+					</div>
+					<div class="calendar-layout">
+						<div class="calendar-main">
+							<div class="calendar-header">
+								<div class="calendar-heading-copy">
+									<p class="calendar-kicker">MISSION FLIGHT LOG</p>
+									<h3><span class="calendar-compass" aria-hidden="true">✥</span><span id="calendarMonthHeading"></span></h3>
+								</div>
+								<nav class="calendar-month-nav" aria-label="Calendar month navigation">
+									<button id="previousCalendarMonth" type="button" aria-label="Previous month">&#8249;</button>
+									<button id="nextCalendarMonth" type="button" aria-label="Next month">&#8250;</button>
+								</nav>
+							</div>
+							<div class="calendar-weekdays" aria-hidden="true">
+								<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+							</div>
+							<div id="missionCalendarGrid" class="calendar-grid" role="group" aria-label="Mission dates"></div>
+							<div class="calendar-legend" aria-label="Calendar legend">
+								<span><span aria-hidden="true">&#9992;</span> Mission scheduled</span>
+								<span><span aria-hidden="true">&#9873;</span> Completed</span>
+								<span><span aria-hidden="true">&#9678;</span> Today</span>
+							</div>
+						</div>
+						<aside class="calendar-itinerary" aria-labelledby="calendarItineraryTitle">
+							<p class="calendar-kicker">FLIGHT ITINERARY</p>
+							<h3 id="calendarItineraryTitle"><span id="calendarSelectedDate"></span></h3>
+							<p id="calendarMissionCount" class="calendar-mission-count"></p>
+							<ul id="calendarItineraryList" class="calendar-itinerary-list"></ul>
+							<p id="calendarItineraryEmptyState" class="calendar-itinerary-empty" hidden>No missions scheduled for this date.</p>
+							<button id="calendarPlanMissionButton" class="calendar-plan-button" type="button">Plan a Mission</button>
+						</aside>
+					</div>
+				</section>
+
+				<ul id="missionList" class="mission-list"></ul>
+				<p id="missionEmptyState" class="mission-empty-state" hidden>No missions due today. Add a mission or check your upcoming plans.</p>
+
+				<section class="mission-group-section" aria-labelledby="upcomingMissionsTitle">
+					<h3 id="upcomingMissionsTitle" class="mission-group-title">Upcoming Missions</h3>
+					<ul id="upcomingMissionList" class="mission-list"></ul>
+					<p id="upcomingMissionEmptyState" class="mission-empty-state" hidden>No upcoming missions. Choose a future date when planning a mission.</p>
+				</section>
+
+				<section id="overdueMissionsSection" class="mission-group-section" aria-labelledby="overdueMissionsTitle" hidden>
+					<h3 id="overdueMissionsTitle" class="mission-group-title">Overdue Missions</h3>
+					<ul id="overdueMissionList" class="mission-list"></ul>
+				</section>
+
+				<section id="completedMissionsSection" class="mission-group-section" aria-labelledby="completedMissionsTitle" hidden>
+					<h3 id="completedMissionsTitle" class="mission-group-title">Completed Missions</h3>
+					<ul id="completedMissionList" class="mission-list"></ul>
+				</section>
+
+				<section class="adventure-statistics" aria-labelledby="adventureStatisticsTitle">
+					<div class="adventure-statistics-heading">
+						<p class="dashboard-eyebrow">EXPEDITION REPORT</p>
+						<h2 id="adventureStatisticsTitle"><span aria-hidden="true">✥</span> Adventure Statistics</h2>
+					</div>
+					<div class="adventure-stat-grid">
+						<article class="adventure-stat-card"><span>Missions created</span><strong id="statMissionsCreated">0</strong></article>
+						<article class="adventure-stat-card"><span>Missions completed</span><strong id="statMissionsCompleted">0</strong></article>
+						<article class="adventure-stat-card"><span>Total XP earned</span><strong id="statXpEarned">0 XP</strong></article>
+						<article class="adventure-stat-card"><span>Explorer level</span><strong id="statExplorerLevel">Level 1</strong></article>
+						<article class="adventure-stat-card"><span>Completion rate</span><strong id="statCompletionRate">0%</strong></article>
+						<article class="adventure-stat-card"><span>Active days</span><strong id="statActiveDays">0</strong></article>
+					</div>
+
+					<div class="adventure-stat-detail-grid">
+						<section class="adventure-report-panel" aria-labelledby="weeklyActivityTitle">
+							<h3 id="weeklyActivityTitle">Weekly Activity</h3>
+							<div id="weeklyActivityChart" class="weekly-activity-chart" role="group" aria-label="Missions completed this week"></div>
+							<p id="weeklyActivityEmptyState" class="statistics-empty-state" hidden>No completed missions recorded this week yet.</p>
+						</section>
+						<section class="adventure-report-panel" aria-labelledby="categoryBreakdownTitle">
+							<h3 id="categoryBreakdownTitle">Mission Categories</h3>
+							<ul id="categoryBreakdownList" class="category-breakdown-list"></ul>
+						</section>
+					</div>
+
+					<section class="achievement-report" aria-labelledby="achievementHighlightsTitle">
+						<div>
+							<p class="dashboard-eyebrow">MILESTONES ON YOUR MAP</p>
+							<h3 id="achievementHighlightsTitle">Achievement Highlights</h3>
+						</div>
+						<ul id="achievementHighlightsList" class="achievement-highlights-list"></ul>
+						<p id="achievementEmptyState" class="statistics-empty-state" hidden>Complete missions to reveal your first milestone.</p>
+					</section>
+				</section>
 			</section>
 
 			<dialog id="missionDialog" class="mission-dialog" aria-labelledby="missionDialogTitle">
@@ -130,6 +206,10 @@
 							</select>
 						</label>
 					</div>
+					<label class="mission-field">
+						<span>Due date</span>
+						<input id="missionDueDate" name="dueDate" type="date">
+					</label>
 
 					<div class="mission-form-actions">
 						<button id="cancelMissionButton" class="mission-cancel-button" type="button">Cancel</button>
@@ -146,67 +226,75 @@
 				</div>
 
 				<div class="destination-grid" aria-label="World destinations">
-					<button id="indiaDestinationButton" class="country-tile is-unlocked" type="button" aria-expanded="false" aria-controls="indiaInfoPanel">
+					<button class="country-tile is-unlocked" type="button" data-country-id="india" aria-pressed="false" aria-controls="destinationInfoPanel">
 						<span class="country-art country-art--india" aria-hidden="true"></span>
 						<span class="country-tile-info">
 							<span class="country-name"><span aria-hidden="true">🇮🇳</span> India</span>
 							<span class="country-status">Unlocked</span>
 						</span>
 					</button>
-					<article class="country-tile is-locked" aria-label="Japan, locked destination">
+					<button class="country-tile is-locked" type="button" data-country-id="japan" disabled aria-pressed="false" aria-controls="destinationInfoPanel">
 						<span class="country-art country-art--japan" aria-hidden="true"></span>
 						<span class="country-tile-info">
 							<span class="country-name"><span aria-hidden="true">🇯🇵</span> Japan</span>
-							<span class="country-status">Locked</span>
+							<span class="country-status">Locked · 100 XP</span>
 						</span>
-					</article>
-					<article class="country-tile is-locked" aria-label="Switzerland, locked destination">
+					</button>
+					<button class="country-tile is-locked" type="button" data-country-id="switzerland" disabled aria-pressed="false" aria-controls="destinationInfoPanel">
 						<span class="country-art country-art--switzerland" aria-hidden="true"></span>
 						<span class="country-tile-info">
 							<span class="country-name"><span aria-hidden="true">🇨🇭</span> Switzerland</span>
-							<span class="country-status">Locked</span>
+							<span class="country-status">Locked · 200 XP</span>
 						</span>
-					</article>
-					<article class="country-tile is-locked" aria-label="Egypt, locked destination">
+					</button>
+					<button class="country-tile is-locked" type="button" data-country-id="egypt" disabled aria-pressed="false" aria-controls="destinationInfoPanel">
 						<span class="country-art country-art--egypt" aria-hidden="true"></span>
 						<span class="country-tile-info">
 							<span class="country-name"><span aria-hidden="true">🇪🇬</span> Egypt</span>
-							<span class="country-status">Locked</span>
+							<span class="country-status">Locked · 300 XP</span>
 						</span>
-					</article>
-					<article class="country-tile is-locked" aria-label="Indonesia, locked destination">
+					</button>
+					<button class="country-tile is-locked" type="button" data-country-id="indonesia" disabled aria-pressed="false" aria-controls="destinationInfoPanel">
 						<span class="country-art country-art--indonesia" aria-hidden="true"></span>
 						<span class="country-tile-info">
 							<span class="country-name"><span aria-hidden="true">🇮🇩</span> Indonesia</span>
-							<span class="country-status">Locked</span>
+							<span class="country-status">Locked · 400 XP</span>
 						</span>
-					</article>
+					</button>
 				</div>
 
-				<p class="locked-destinations-note">Japan, Switzerland, Egypt, and Indonesia are locked for now. More destinations will open in a future update.</p>
+				<p class="locked-destinations-note">Complete missions to earn XP and unlock new destinations.</p>
+				<p id="unlockCelebration" class="unlock-celebration" role="status" aria-live="polite" hidden></p>
 
-				<section id="indiaInfoPanel" class="destination-info-panel" aria-labelledby="indiaInfoTitle" hidden>
+				<dialog id="destinationInfoPanel" class="destination-info-panel" aria-labelledby="destinationInfoTitle">
 					<div class="destination-info-header">
 						<div>
 							<p class="dashboard-eyebrow">DESTINATION GUIDE</p>
-							<h3 id="indiaInfoTitle"><span aria-hidden="true">🇮🇳</span> India</h3>
+							<h3 id="destinationInfoTitle"><span id="destinationInfoFlag" aria-hidden="true">🇮🇳</span> <span id="destinationInfoName">India</span></h3>
 						</div>
-						<button id="closeIndiaInfo" class="destination-close" type="button" aria-label="Close India information">&times;</button>
+						<button id="closeDestinationInfo" class="destination-close" type="button" aria-label="Close destination information">&times;</button>
 					</div>
-					<p class="destination-summary">From Himalayan peaks to vibrant cities, India is a land of remarkable landscapes, deep history, and many living traditions.</p>
+					<p id="destinationSummary" class="destination-summary">From Himalayan peaks to vibrant cities, India is a land of remarkable landscapes, deep history, and many living traditions.</p>
 					<div class="destination-facts">
-						<div class="destination-stat"><span>Capital</span><strong>New Delhi</strong></div>
-						<div class="destination-stat"><span>Currency</span><strong>Indian Rupee (INR)</strong></div>
+						<div class="destination-stat"><span>Capital</span><strong id="destinationCapital">New Delhi</strong></div>
+						<div class="destination-stat"><span>Currency</span><strong><span id="destinationCurrency">Indian Rupee</span> <span id="destinationCurrencyCode" class="currency-code">(INR)</span></strong></div>
+					</div>
+					<div class="destination-extras">
+						<div class="destination-extra"><span>Famous landmark</span><strong id="destinationLandmark">Taj Mahal</strong></div>
+						<div class="destination-extra"><span>Local greeting</span><strong id="destinationGreeting">Namaste</strong><small id="destinationGreetingMeaning">Hello</small></div>
 					</div>
 					<div class="interesting-facts">
 						<h4>Along the way</h4>
-						<ul>
+						<ul id="destinationFacts">
 							<li>The Himalayas in northern India include some of the world's highest mountain peaks.</li>
 							<li>India is home to the world's largest film industry by number of films produced.</li>
 							<li>Chess and the game of snakes and ladders both have roots in India.</li>
 						</ul>
 					</div>
-				</section>
+					<div class="destination-modal-actions">
+						<button id="startExploringButton" class="start-exploring-button" type="button">Start Exploring</button>
+					</div>
+				</dialog>
 			</section>
 		</div>
 	</section>
