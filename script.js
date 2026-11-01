@@ -79,6 +79,8 @@ const calendarMissionCount = document.getElementById("calendarMissionCount");
 const calendarItineraryList = document.getElementById("calendarItineraryList");
 const calendarItineraryEmptyState = document.getElementById("calendarItineraryEmptyState");
 const calendarPlanMissionButton = document.getElementById("calendarPlanMissionButton");
+let editingMissionId = null;
+const missionDialogTitle = document.getElementById("missionDialogTitle");
 
 const STORAGE_KEY = "taskerra-progress";
 const CUSTOM_MISSIONS_STORAGE_KEY = "taskerra-custom-missions";
@@ -94,6 +96,50 @@ const DEFAULT_COUNTRY = "india";
 const COUNTRY_INFO_POPUP_ENABLED = false;
 const DIFFICULTY_XP = { Easy: 10, Medium: 20, Hard: 30 };
 const MISSION_CATEGORIES = new Set(["Study", "Personal", "Fitness", "Hobbies", "Other"]);
+const ACHIEVEMENTS = [
+    {
+        id: "first-steps",
+        name: "First Steps",
+        description: "Complete your first mission.",
+        icon: "🌱",
+        requirement: (stats) => stats.completed >= 1
+    },
+    {
+        id: "explorer",
+        name: "Explorer",
+        description: "Complete 10 missions.",
+        icon: "🧭",
+        requirement: (stats) => stats.completed >= 10
+    },
+    {
+        id: "rising-star",
+        name: "Rising Star",
+        description: "Earn 100 XP.",
+        icon: "⭐",
+        requirement: (stats) => stats.xp >= 100
+    },
+    {
+        id: "master-adventurer",
+        name: "Master Adventurer",
+        description: "Complete 50 missions.",
+        icon: "🏅",
+        requirement: (stats) => stats.completed >= 50
+    },
+    {
+        id: "globetrotter",
+        name: "Globetrotter",
+        description: "Unlock 3 countries.",
+        icon: "🌍",
+        requirement: (stats) => stats.countries >= 3
+    },
+    {
+        id: "xp-collector",
+        name: "XP Collector",
+        description: "Earn 500 XP.",
+        icon: "💎",
+        requirement: (stats) => stats.xp >= 500
+    }
+];
 const DEFAULT_MISSIONS = [
 	{
 		id: "plan-route",
@@ -1066,6 +1112,13 @@ function createMissionCard(mission) {
 	actions.append(reward);
 
 	const actionGroup = document.createElement("div");
+	const editButton = document.createElement("button");
+editButton.className = "mission-action-button edit-mission-button";
+editButton.type = "button";
+editButton.textContent = "Edit";
+editButton.setAttribute("aria-label", `Edit mission: ${mission.title}`);
+editButton.addEventListener("click", () => editMission(mission.id));
+actionGroup.append(editButton);
 	actionGroup.className = "mission-action-group";
 	const completeButton = document.createElement("button");
 	completeButton.className = "mission-action-button complete-mission-button";
@@ -1298,53 +1351,128 @@ function completeMission(missionId) {
 	updateUnlockedCountries(previousXp);
 	renderMissions();
 }
+function getAchievementStats() {
+    return {
+        completed: progress.completedMissions.length,
+        xp: progress.xp,
+        countries: unlockedCountryIds.size
+    };
+}
+
+function getUnlockedAchievements() {
+    const stats = getAchievementStats();
+
+    return ACHIEVEMENTS.filter((achievement) =>
+        achievement.requirement(stats)
+    );
+}
 
 function addCustomMission(event) {
-	event.preventDefault();
-	const title = missionTitleInput.value.trim();
-	if (!title) {
-		missionTitleInput.setCustomValidity("Please enter a mission title.");
-		missionTitleInput.reportValidity();
-		return;
-	}
+    event.preventDefault();
 
-	missionTitleInput.setCustomValidity("");
-	const today = getLocalDateString();
-	const dueDate = missionDueDateInput.value || today;
-	missionDueDateInput.min = today;
-	if (!isValidMissionDate(dueDate) || dueDate < today) {
-		missionDueDateInput.setCustomValidity("Choose today or a future date.");
-		missionDueDateInput.reportValidity();
-		return;
-	}
-	missionDueDateInput.setCustomValidity("");
-	const difficulty = missionDifficultyInput.value;
-	const mission = {
-		id: createMissionId(),
-		title: title.slice(0, 80),
-		description: missionDescriptionInput.value.trim().slice(0, 180),
-		category: MISSION_CATEGORIES.has(missionCategoryInput.value) ? missionCategoryInput.value : "Other",
-		difficulty: Object.hasOwn(DIFFICULTY_XP, difficulty) ? difficulty : "Medium",
-		xp: DIFFICULTY_XP[Object.hasOwn(DIFFICULTY_XP, difficulty) ? difficulty : "Medium"],
-		dueDate,
-	};
+    const title = missionTitleInput.value.trim();
 
-	customMissions.push(mission);
-	saveCustomMissions();
-	renderMissions();
-	missionForm.reset();
-	missionDueDateInput.min = getLocalDateString();
-	missionDueDateInput.value = missionDueDateInput.min;
-	missionDialog.close();
-	addMissionButton.focus();
+    if (!title) {
+        missionTitleInput.setCustomValidity("Please enter a mission title.");
+        missionTitleInput.reportValidity();
+        return;
+    }
+
+    missionTitleInput.setCustomValidity("");
+
+    const today = getLocalDateString();
+    const dueDate = missionDueDateInput.value || today;
+
+    missionDueDateInput.min = today;
+
+    if (!isValidMissionDate(dueDate) || dueDate < today) {
+        missionDueDateInput.setCustomValidity("Choose today or a future date.");
+        missionDueDateInput.reportValidity();
+        return;
+    }
+
+    missionDueDateInput.setCustomValidity("");
+
+    const difficulty = Object.hasOwn(DIFFICULTY_XP, missionDifficultyInput.value)
+        ? missionDifficultyInput.value
+        : "Medium";
+
+    const missionDetails = {
+        title: title.slice(0, 80),
+        description: missionDescriptionInput.value.trim().slice(0, 180),
+        category: MISSION_CATEGORIES.has(missionCategoryInput.value)
+            ? missionCategoryInput.value
+            : "Other",
+        difficulty,
+        xp: DIFFICULTY_XP[difficulty],
+        dueDate
+    };
+
+    if (editingMissionId !== null) {
+        const existingMission = customMissions.find(
+            (item) => item.id === editingMissionId
+        );
+
+        if (!existingMission) return;
+
+        Object.assign(existingMission, missionDetails);
+        editingMissionId = null;
+    } else {
+        customMissions.push({
+            id: createMissionId(),
+            ...missionDetails
+        });
+    }
+
+    saveCustomMissions();
+    renderMissions();
+
+    missionForm.reset();
+    missionDialogTitle.textContent = "Add a Mission";
+    missionDueDateInput.min = getLocalDateString();
+    missionDueDateInput.value = missionDueDateInput.min;
+
+    missionDialog.close();
+    addMissionButton.focus();
+}
+	
+	function editMission(missionId) {
+    
+    const mission = getMissions().find((item) => item.id === missionId);
+
+    if (!mission) return;
+
+    editingMissionId = missionId;
+
+    missionTitleInput.value = mission.title;
+    missionDescriptionInput.value = mission.description || "";
+    missionCategoryInput.value = mission.category;
+    missionDifficultyInput.value = mission.difficulty;
+    missionDueDateInput.value = mission.dueDate;
+
+    missionDueDateInput.min = getLocalDateString();
+    missionTitleInput.setCustomValidity("");
+    missionDueDateInput.setCustomValidity("");
+
+    missionDialogTitle.textContent = "Edit Mission";
+    missionDialog.showModal();
 }
 
 function openMissionDialogForDate(date) {
-	const today = getLocalDateString();
-	missionDueDateInput.min = today;
-	missionDueDateInput.value = isValidMissionDate(date) && date >= today ? date : today;
-	missionDueDateInput.setCustomValidity("");
-	missionDialog.showModal();
+    editingMissionId = null;
+
+    const today = getLocalDateString();
+
+    missionForm.reset();
+    missionDialogTitle.textContent = "Add a Mission";
+    missionDueDateInput.min = today;
+    missionDueDateInput.value =
+        isValidMissionDate(date) && date >= today ? date : today;
+
+    missionTitleInput.setCustomValidity("");
+    missionDueDateInput.setCustomValidity("");
+
+    missionDialog.showModal();
 }
 
 function showDashboard() {
