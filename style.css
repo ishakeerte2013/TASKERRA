@@ -365,6 +365,70 @@ body.dashboard-mode::before {
 	font-weight: 800;
 }
 
+.adventure-backup {
+	margin-top: 1.25rem;
+	padding: 1rem 1.15rem;
+	border: 1px solid var(--dashboard-line);
+	border-radius: 12px;
+	background: rgba(246, 232, 201, 0.94);
+}
+
+.adventure-backup-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.adventure-backup-heading .dashboard-eyebrow {
+	margin-bottom: 0.1rem;
+}
+
+.adventure-backup-heading h2 {
+	margin: 0;
+	color: var(--dashboard-navy);
+	font-size: 1.2rem;
+	font-weight: 800;
+}
+
+.adventure-backup-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+}
+
+.dashboard-screen button.backup-button {
+	min-height: 2.6rem;
+	padding: 0.55rem 0.9rem;
+	border: 1px solid var(--dashboard-gold);
+	border-radius: 8px;
+	color: var(--dashboard-navy);
+	background: var(--dashboard-gold);
+	font-size: 0.88rem;
+	box-shadow: none;
+}
+
+.dashboard-screen button.backup-button:hover {
+	background: #f8cb6a;
+	box-shadow: 0 4px 10px rgba(23, 61, 89, 0.12);
+}
+
+.dashboard-screen button.backup-button--secondary {
+	border-color: rgba(23, 61, 89, 0.2);
+	background: var(--dashboard-white);
+}
+
+.dashboard-screen button.backup-button--secondary:hover {
+	background: var(--dashboard-mint);
+}
+
+.backup-status {
+	margin: 0.7rem 0 0;
+	color: var(--dashboard-navy);
+	font-size: 0.85rem;
+	font-weight: 700;
+}
+
 .missions-section {
 	margin-top: 2rem;
 }
@@ -1117,6 +1181,46 @@ body.dashboard-mode::before {
 	background: rgba(255, 255, 255, 0.72);
 }
 
+.explorer-insights-panel {
+	margin-top: 0.75rem;
+	padding: 0.95rem 1rem;
+	border: 1px solid rgba(23, 61, 89, 0.1);
+	border-radius: 10px;
+	background: var(--dashboard-mint);
+}
+
+.explorer-insights-panel h3 {
+	margin: 0 0 0.7rem;
+	color: var(--dashboard-navy);
+	font-size: 1.05rem;
+	font-weight: 800;
+}
+
+.explorer-insights-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.75rem;
+}
+
+.explorer-insights-grid > div {
+	display: grid;
+	align-content: start;
+	gap: 0.2rem;
+	min-width: 0;
+}
+
+.explorer-insights-grid span {
+	color: var(--dashboard-muted);
+	font-size: 0.78rem;
+	font-weight: 700;
+}
+
+.explorer-insights-grid strong {
+	color: var(--dashboard-navy);
+	font-size: 0.9rem;
+	overflow-wrap: anywhere;
+}
+
 .achievement-highlights-list {
 	display: flex;
 	flex-wrap: wrap;
@@ -1830,6 +1934,11 @@ body.dashboard-mode::before {
 	.adventure-stat-detail-grid {
 		grid-template-columns: 1fr;
 	}
+
+	.explorer-insights-grid {
+		grid-template-columns: 1fr;
+		gap: 0.6rem;
+	}
 }
 
 @media (max-width: 520px) {
@@ -1879,6 +1988,19 @@ body.dashboard-mode::before {
 	.dashboard-topbar {
 		gap: 0.6rem;
 		padding: 0.55rem 0.7rem;
+	}
+
+	.adventure-backup-heading {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.adventure-backup-actions {
+		width: 100%;
+	}
+
+	.adventure-backup-actions button {
+		flex: 1;
 	}
 
 	.mission-heading-row {
@@ -1951,4 +2073,154 @@ body.dashboard-mode::before {
 	.mission-item {
 		transition: none;
 	}
+}
+/* Mission Search and Filters */
+
+.mission-filters {
+    display: grid;
+    grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(140px, 1fr)) auto;
+    gap: 0.75rem;
+    margin: 1.5rem 0 0.5rem;
+    padding: 1rem;
+    border: 1px solid rgba(23, 61, 89, 0.15);
+    border-radius: 14px;
+    background: rgba(229, 243, 239, 0.94);
+}
+
+.mission-filters input,
+.mission-filters select {
+    min-width: 0;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid rgba(23, 61, 89, 0.25);
+    border-radius: 9px;
+    background: #fffaf0;
+    color: #173d59;
+    font: inherit;
+}
+
+.mission-filters input:focus,
+.mission-filters select:focus {
+    outline: 2px solid #0f7885;
+    outline-offset: 2px;
+}
+
+.mission-filters button {
+    padding: 0.8rem 1rem;
+    border: 0;
+    border-radius: 9px;
+    background: #07566b;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.mission-filters button:hover {
+    background: #0f7885;
+}
+
+.mission-filter-count {
+    margin: 0 0 1rem;
+    color: #173d59;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+@media (max-width: 700px) {
+    .mission-filters {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mission-filters input {
+        grid-column: 1 / -1;
+    }
+
+    .mission-filters button {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 420px) {
+    .mission-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .mission-filters input,
+    .mission-filters button {
+        grid-column: auto;
+    }
+}
+/* Mission Search and Filters */
+
+.mission-filters {
+    display: grid;
+    grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(140px, 1fr)) auto;
+    gap: 0.75rem;
+    margin: 1.5rem 0 0.5rem;
+    padding: 1rem;
+    border: 1px solid rgba(23, 61, 89, 0.15);
+    border-radius: 14px;
+    background: rgba(229, 243, 239, 0.94);
+}
+
+.mission-filters input,
+.mission-filters select {
+    min-width: 0;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid rgba(23, 61, 89, 0.25);
+    border-radius: 9px;
+    background: #fffaf0;
+    color: #173d59;
+    font: inherit;
+}
+
+.mission-filters input:focus,
+.mission-filters select:focus {
+    outline: 2px solid #0f7885;
+    outline-offset: 2px;
+}
+
+.mission-filters button {
+    padding: 0.8rem 1rem;
+    border: 0;
+    border-radius: 9px;
+    background: #07566b;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.mission-filters button:hover {
+    background: #0f7885;
+}
+
+.mission-filter-count {
+    margin: 0 0 1rem;
+    color: #173d59;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+@media (max-width: 700px) {
+    .mission-filters {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mission-filters input {
+        grid-column: 1 / -1;
+    }
+
+    .mission-filters button {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 420px) {
+    .mission-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .mission-filters input,
+    .mission-filters button {
+        grid-column: auto;
+    }
 }

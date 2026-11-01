@@ -10,6 +10,10 @@ const levelProgressTrack = document.getElementById("levelProgressTrack");
 const levelProgressBar = document.getElementById("levelProgressBar");
 const levelProgressText = document.getElementById("levelProgressText");
 const levelUpMessage = document.getElementById("levelUpMessage");
+const exportAdventureButton = document.getElementById("exportAdventureButton");
+const chooseBackupButton = document.getElementById("chooseBackupButton");
+const backupFileInput = document.getElementById("backupFileInput");
+const backupStatus = document.getElementById("backupStatus");
 const currentDestinationName = document.getElementById("currentDestinationName");
 const destinationTitle = document.getElementById("destinationTitle");
 const destinationIntroduction = document.getElementById("destinationIntroduction");
@@ -30,6 +34,11 @@ const closeDestinationInfo = document.getElementById("closeDestinationInfo");
 const startExploringButton = document.getElementById("startExploringButton");
 const unlockCelebration = document.getElementById("unlockCelebration");
 const missionList = document.getElementById("missionList");
+const missionSearch = document.getElementById("missionSearch");
+const missionCategoryFilter = document.getElementById("missionCategoryFilter");
+const missionStatusFilter = document.getElementById("missionStatusFilter");
+const clearMissionFilters = document.getElementById("clearMissionFilters");
+const missionFilterCount = document.getElementById("missionFilterCount");
 const addMissionButton = document.getElementById("addMissionButton");
 const upcomingMissionList = document.getElementById("upcomingMissionList");
 const overdueMissionList = document.getElementById("overdueMissionList");
@@ -43,6 +52,9 @@ const statXpEarned = document.getElementById("statXpEarned");
 const statExplorerLevel = document.getElementById("statExplorerLevel");
 const statCompletionRate = document.getElementById("statCompletionRate");
 const statActiveDays = document.getElementById("statActiveDays");
+const mostUsedCategoryInsight = document.getElementById("mostUsedCategoryInsight");
+const mostProductiveWeekdayInsight = document.getElementById("mostProductiveWeekdayInsight");
+const overallCompletionRateInsight = document.getElementById("overallCompletionRateInsight");
 const weeklyActivityChart = document.getElementById("weeklyActivityChart");
 const weeklyActivityEmptyState = document.getElementById("weeklyActivityEmptyState");
 const categoryBreakdownList = document.getElementById("categoryBreakdownList");
@@ -74,6 +86,9 @@ const DELETED_SAMPLE_MISSIONS_STORAGE_KEY = "taskerra-deleted-sample-missions";
 const SAMPLE_MISSION_DATES_STORAGE_KEY = "taskerra-sample-mission-dates";
 const COUNTRY_STORAGE_KEY = "taskerra-selected-country";
 const UNLOCKED_COUNTRIES_STORAGE_KEY = "taskerra-unlocked-countries";
+const BACKUP_FORMAT = "taskerra-adventure-backup";
+const BACKUP_FORMAT_VERSION = 1;
+const TASKERRA_VERSION = "1.0.0";
 const BASE_XP_PER_LEVEL = 100;
 const DEFAULT_COUNTRY = "india";
 const COUNTRY_INFO_POPUP_ENABLED = false;
@@ -186,6 +201,15 @@ const DESTINATIONS = {
 		facts: ["Indonesia is the world's largest archipelago country.", "Komodo dragons live naturally on several Indonesian islands.", "Indonesia has hundreds of distinct languages spoken across its islands."],
 	},
 };
+
+const BACKUP_STORAGE_KEYS = [
+	STORAGE_KEY,
+	CUSTOM_MISSIONS_STORAGE_KEY,
+	DELETED_SAMPLE_MISSIONS_STORAGE_KEY,
+	SAMPLE_MISSION_DATES_STORAGE_KEY,
+	COUNTRY_STORAGE_KEY,
+	UNLOCKED_COUNTRIES_STORAGE_KEY,
+];
 
 function getLocalDateString(date = new Date()) {
 	const year = date.getFullYear();
@@ -329,18 +353,20 @@ function getCurrentWeekDateStrings() {
 
 function renderAdventureStatistics() {
 	const missions = getMissions();
-	const missionIds = new Set(missions.map((mission) => mission.id));
-	const completedMissions = [...new Set(progress.completedMissions)].filter((missionId) => missionIds.has(missionId));
-	const completedMissionIds = new Set(completedMissions);
-	const completedCount = completedMissions.length;
+	const missionsById = new Map(missions.map((mission) => [mission.id, mission]));
+	const completedMissionIds = new Set(progress.completedMissions.filter((missionId) => missionsById.has(missionId)));
+	const completedCount = completedMissionIds.size;
 	const missionCount = missions.length;
 	const completionRate = missionCount === 0 ? 0 : Math.round((completedCount / missionCount) * 100);
 	const today = getLocalDateString();
-	const actualCompletionDates = Object.entries(progress.completionDates || {}).filter(([, date]) =>
-		isValidMissionDate(date) && date <= today,
-	);
-	const validCompletionDates = actualCompletionDates.filter(([missionId]) => completedMissionIds.has(missionId));
-	const activeDays = new Set(validCompletionDates.map(([, date]) => date)).size;
+	const datedCompletions = [...completedMissionIds].flatMap((missionId) => {
+		const mission = missionsById.get(missionId);
+		const date = progress.completionDates?.[missionId];
+		return mission && isValidMissionDate(date) && date <= today
+			? [{ missionId, date, xp: mission.xp }]
+			: [];
+	});
+	const activeDays = new Set(datedCompletions.map((completion) => completion.date)).size;
 
 	statMissionsCreated.textContent = missionCount;
 	statMissionsCompleted.textContent = completedCount;
@@ -348,33 +374,70 @@ function renderAdventureStatistics() {
 	statExplorerLevel.textContent = `Level ${getLevelForXp(progress.xp)}`;
 	statCompletionRate.textContent = `${completionRate}%`;
 	statActiveDays.textContent = activeDays;
+	overallCompletionRateInsight.textContent = `${completionRate}%`;
+
+	const categoryCounts = new Map([...MISSION_CATEGORIES].map((category) => [category, { total: 0, completed: 0 }]));
+	for (const mission of missions) {
+		const category = MISSION_CATEGORIES.has(mission.category) ? mission.category : "Other";
+		const counts = categoryCounts.get(category);
+		counts.total += 1;
+		if (completedMissionIds.has(mission.id)) {
+			counts.completed += 1;
+		}
+	}
+	const maxCategoryCount = Math.max(1, ...[...categoryCounts.values()].map(({ total }) => total));
+	categoryBreakdownList.replaceChildren(...[...categoryCounts].map(([category, counts]) => {
+		const row = document.createElement("li");
+		row.className = "category-breakdown-row";
+		const label = document.createElement("span");
+		label.textContent = category;
+		const countLabel = document.createElement("strong");
+		countLabel.textContent = `${counts.completed} done · ${counts.total - counts.completed} pending`;
+		const track = document.createElement("span");
+		track.className = "category-breakdown-track";
+		const fill = document.createElement("span");
+		fill.style.width = `${(counts.total / maxCategoryCount) * 100}%`;
+		track.append(fill);
+		row.append(label, countLabel, track);
+		return row;
+	}));
+
+	const mostUsedCount = Math.max(0, ...[...categoryCounts.values()].map(({ total }) => total));
+	if (mostUsedCount === 0) {
+		mostUsedCategoryInsight.textContent = "Add missions to see your favorite route.";
+	} else {
+		const mostUsedCategories = [...categoryCounts].filter(([, counts]) => counts.total === mostUsedCount).map(([category]) => category);
+		mostUsedCategoryInsight.textContent = mostUsedCategories.length === 1
+			? `${mostUsedCategories[0]} (${mostUsedCount})`
+			: `Tie: ${mostUsedCategories.join(" / ")} (${mostUsedCount} each)`;
+	}
 
 	const weekDates = getCurrentWeekDateStrings();
 	const missionsByDay = new Map(weekDates.map((date) => [date, 0]));
-	for (const [, completionDate] of validCompletionDates) {
-		if (missionsByDay.has(completionDate)) {
-			missionsByDay.set(completionDate, missionsByDay.get(completionDate) + 1);
+	for (const completion of datedCompletions) {
+		if (missionsByDay.has(completion.date)) {
+			missionsByDay.set(completion.date, missionsByDay.get(completion.date) + completion.xp);
 		}
 	}
 	const maxDailyCompletions = Math.max(1, ...missionsByDay.values());
 	let weeklyCompletionTotal = 0;
 	weeklyActivityChart.replaceChildren(...weekDates.map((date) => {
-		const count = missionsByDay.get(date);
-		weeklyCompletionTotal += count;
+		const xpEarned = missionsByDay.get(date);
+		weeklyCompletionTotal += xpEarned;
 		const [year, month, day] = date.split("-").map(Number);
 		const localDate = new Date(year, month - 1, day);
 		const dayColumn = document.createElement("div");
 		dayColumn.className = `weekly-day${date === today ? " is-today" : ""}`;
-		dayColumn.setAttribute("aria-label", `${localDate.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}: ${count} missions completed`);
+		dayColumn.setAttribute("aria-label", `${localDate.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}: ${xpEarned} XP earned`);
 
 		const countLabel = document.createElement("span");
 		countLabel.className = "weekly-day-count";
-		countLabel.textContent = count;
+		countLabel.textContent = `${xpEarned} XP`;
 		const barTrack = document.createElement("span");
 		barTrack.className = "weekly-bar-track";
 		const barFill = document.createElement("span");
 		barFill.className = "weekly-bar-fill";
-		barFill.style.height = count === 0 ? "0%" : `${Math.max(10, (count / maxDailyCompletions) * 100)}%`;
+		barFill.style.height = xpEarned === 0 ? "0%" : `${Math.max(10, (xpEarned / maxDailyCompletions) * 100)}%`;
 		barTrack.append(barFill);
 		const dayLabel = document.createElement("span");
 		dayLabel.textContent = localDate.toLocaleDateString(undefined, { weekday: "short" });
@@ -383,33 +446,31 @@ function renderAdventureStatistics() {
 	}));
 	weeklyActivityEmptyState.hidden = weeklyCompletionTotal > 0;
 
-	const categoryCounts = new Map([...MISSION_CATEGORIES].map((category) => [category, 0]));
-	for (const mission of missions) {
-		const category = MISSION_CATEGORIES.has(mission.category) ? mission.category : "Other";
-		categoryCounts.set(category, categoryCounts.get(category) + 1);
+	const weekdayCounts = new Map(Array.from({ length: 7 }, (_, index) => [index, 0]));
+	for (const completion of datedCompletions) {
+		const [year, month, day] = completion.date.split("-").map(Number);
+		const weekday = new Date(year, month - 1, day).getDay();
+		weekdayCounts.set(weekday, weekdayCounts.get(weekday) + 1);
 	}
-	const maxCategoryCount = Math.max(1, ...categoryCounts.values());
-	categoryBreakdownList.replaceChildren(...[...categoryCounts].map(([category, count]) => {
-		const row = document.createElement("li");
-		row.className = "category-breakdown-row";
-		const label = document.createElement("span");
-		label.textContent = category;
-		const countLabel = document.createElement("strong");
-		countLabel.textContent = count;
-		const track = document.createElement("span");
-		track.className = "category-breakdown-track";
-		const fill = document.createElement("span");
-		fill.style.width = `${(count / maxCategoryCount) * 100}%`;
-		track.append(fill);
-		row.append(label, countLabel, track);
-		return row;
-	}));
+	const maxWeekdayCompletions = Math.max(0, ...weekdayCounts.values());
+	if (maxWeekdayCompletions === 0) {
+		mostProductiveWeekdayInsight.textContent = "Not enough dated history yet.";
+	} else {
+		const mostProductiveWeekdays = [...weekdayCounts]
+			.filter(([, count]) => count === maxWeekdayCompletions)
+			.map(([weekday]) => new Date(2024, 0, 7 + weekday).toLocaleDateString(undefined, { weekday: "long" }));
+		mostProductiveWeekdayInsight.textContent = `${mostProductiveWeekdays.join(" / ")} (${maxWeekdayCompletions})`;
+	}
 
 	const earnedAchievements = [
 		{ icon: "✧", title: "First mission completed", earned: completedCount >= 1 },
 		{ icon: "⚑", title: "10 missions completed", earned: completedCount >= 10 },
+		{ icon: "⚑", title: "25 missions completed", earned: completedCount >= 25 },
 		{ icon: "✦", title: "100 XP earned", earned: progress.xp >= 100 },
+		{ icon: "✦", title: "500 XP earned", earned: progress.xp >= 500 },
+		{ icon: "✦", title: "1000 XP earned", earned: progress.xp >= 1000 },
 		{ icon: "⌖", title: "First level-up", earned: getLevelForXp(progress.xp) >= 2 },
+		{ icon: "⌖", title: "First destination unlocked", earned: unlockedCountryIds.size > 1 },
 	].filter((achievement) => achievement.earned);
 	achievementHighlightsList.replaceChildren(...earnedAchievements.map((achievement) => {
 		const item = document.createElement("li");
@@ -702,6 +763,199 @@ function saveProgress() {
 	}
 }
 
+function showBackupStatus(message, isError = false) {
+	backupStatus.textContent = message;
+	backupStatus.classList.toggle("is-error", isError);
+	backupStatus.hidden = false;
+}
+
+function createAdventureBackup() {
+	const storage = Object.fromEntries(BACKUP_STORAGE_KEYS.map((key) => [key, localStorage.getItem(key)]));
+	return {
+		format: BACKUP_FORMAT,
+		formatVersion: BACKUP_FORMAT_VERSION,
+		taskerraVersion: TASKERRA_VERSION,
+		createdAt: new Date().toISOString(),
+		explorerLevel: getLevelForXp(progress.xp),
+		storage,
+	};
+}
+
+function parseBackupStorageValue(storage, key, fallbackValue) {
+	const rawValue = storage[key];
+	if (rawValue === null) {
+		return fallbackValue;
+	}
+	if (typeof rawValue !== "string") {
+		throw new Error(`Backup entry for ${key} must be JSON text or null.`);
+	}
+	try {
+		return JSON.parse(rawValue);
+	} catch {
+		throw new Error(`Backup entry for ${key} contains invalid JSON.`);
+	}
+}
+
+function validateAdventureBackup(backup) {
+	const expectedProperties = ["format", "formatVersion", "taskerraVersion", "createdAt", "explorerLevel", "storage"];
+	if (!backup || typeof backup !== "object" || Array.isArray(backup) || Object.keys(backup).length !== expectedProperties.length || expectedProperties.some((property) => !Object.hasOwn(backup, property))) {
+		throw new Error("This file is not a supported TASKERRA adventure backup.");
+	}
+	if (backup.format !== BACKUP_FORMAT || backup.formatVersion !== BACKUP_FORMAT_VERSION || typeof backup.taskerraVersion !== "string") {
+		throw new Error("This TASKERRA backup version is not supported.");
+	}
+	if (typeof backup.createdAt !== "string" || !Number.isFinite(Date.parse(backup.createdAt))) {
+		throw new Error("The backup creation date is invalid.");
+	}
+	if (!backup.storage || typeof backup.storage !== "object" || Array.isArray(backup.storage) || Object.keys(backup.storage).length !== BACKUP_STORAGE_KEYS.length || BACKUP_STORAGE_KEYS.some((key) => !Object.hasOwn(backup.storage, key))) {
+		throw new Error("The backup is missing required TASKERRA data.");
+	}
+	for (const value of Object.values(backup.storage)) {
+		if (value !== null && typeof value !== "string") {
+			throw new Error("Backup storage values must be JSON text or null.");
+		}
+	}
+
+	const restoredProgress = parseBackupStorageValue(backup.storage, STORAGE_KEY, { xp: 0, completedMissions: [], completionDates: {} });
+	if (!restoredProgress || typeof restoredProgress !== "object" || Array.isArray(restoredProgress) || !Number.isSafeInteger(restoredProgress.xp) || restoredProgress.xp < 0 || !Array.isArray(restoredProgress.completedMissions)) {
+		throw new Error("The backup's XP or completion data is invalid.");
+	}
+	if (new Set(restoredProgress.completedMissions).size !== restoredProgress.completedMissions.length || restoredProgress.completedMissions.some((missionId) => typeof missionId !== "string")) {
+		throw new Error("The backup contains invalid or duplicate completed mission IDs.");
+	}
+
+	const restoredCustomMissions = parseBackupStorageValue(backup.storage, CUSTOM_MISSIONS_STORAGE_KEY, []);
+	if (!Array.isArray(restoredCustomMissions)) {
+		throw new Error("The custom mission list is invalid.");
+	}
+	const customMissionIds = new Set();
+	for (const mission of restoredCustomMissions) {
+		if (!mission || typeof mission !== "object" || Array.isArray(mission) || typeof mission.id !== "string" || !mission.id.startsWith("custom-") || customMissionIds.has(mission.id) || typeof mission.title !== "string" || !mission.title.trim() || !Object.hasOwn(DIFFICULTY_XP, mission.difficulty) || (mission.category !== undefined && !MISSION_CATEGORIES.has(mission.category)) || (mission.dueDate !== undefined && !isValidMissionDate(mission.dueDate)) || (mission.xp !== undefined && mission.xp !== DIFFICULTY_XP[mission.difficulty])) {
+			throw new Error("The backup contains an invalid custom mission.");
+		}
+		customMissionIds.add(mission.id);
+	}
+
+	const deletedSampleIds = parseBackupStorageValue(backup.storage, DELETED_SAMPLE_MISSIONS_STORAGE_KEY, []);
+	const sampleMissionIds = new Set(DEFAULT_MISSIONS.map((mission) => mission.id));
+	if (!Array.isArray(deletedSampleIds) || new Set(deletedSampleIds).size !== deletedSampleIds.length || deletedSampleIds.some((missionId) => !sampleMissionIds.has(missionId))) {
+		throw new Error("The deleted sample mission list is invalid.");
+	}
+
+	const sampleDates = parseBackupStorageValue(backup.storage, SAMPLE_MISSION_DATES_STORAGE_KEY, {});
+	if (!sampleDates || typeof sampleDates !== "object" || Array.isArray(sampleDates) || Object.entries(sampleDates).some(([missionId, dueDate]) => !sampleMissionIds.has(missionId) || !isValidMissionDate(dueDate))) {
+		throw new Error("The sample mission calendar data is invalid.");
+	}
+
+	const availableMissionIds = new Set([
+		...DEFAULT_MISSIONS.filter((mission) => !deletedSampleIds.includes(mission.id)).map((mission) => mission.id),
+		...customMissionIds,
+	]);
+	if (restoredProgress.completedMissions.some((missionId) => !availableMissionIds.has(missionId))) {
+		throw new Error("The backup refers to a completed mission that is not present.");
+	}
+	const completionDates = restoredProgress.completionDates ?? {};
+	if (!completionDates || typeof completionDates !== "object" || Array.isArray(completionDates) || Object.entries(completionDates).some(([missionId, date]) => !restoredProgress.completedMissions.includes(missionId) || !isValidMissionDate(date))) {
+		throw new Error("The mission completion history is invalid.");
+	}
+
+	const selectedCountry = backup.storage[COUNTRY_STORAGE_KEY];
+	if (selectedCountry !== null && (typeof selectedCountry !== "string" || !Object.hasOwn(DESTINATIONS, selectedCountry))) {
+		throw new Error("The selected destination is invalid.");
+	}
+	const restoredUnlocked = parseBackupStorageValue(backup.storage, UNLOCKED_COUNTRIES_STORAGE_KEY, null);
+	if (restoredUnlocked !== null && (!Array.isArray(restoredUnlocked) || new Set(restoredUnlocked).size !== restoredUnlocked.length || restoredUnlocked.some((countryId) => !Object.hasOwn(DESTINATIONS, countryId)))) {
+		throw new Error("The unlocked destination list is invalid.");
+	}
+	const earnedCountryIds = calculateUnlockedCountryIds(restoredProgress.xp);
+	if (restoredUnlocked && [...restoredUnlocked].some((countryId) => !earnedCountryIds.has(countryId))) {
+		throw new Error("The backup unlocks a destination beyond its XP requirement.");
+	}
+	if (selectedCountry && !earnedCountryIds.has(selectedCountry)) {
+		throw new Error("The selected destination is not unlocked by the saved XP.");
+	}
+	if (!Number.isSafeInteger(backup.explorerLevel) || backup.explorerLevel !== getLevelForXp(restoredProgress.xp)) {
+		throw new Error("The saved Explorer level does not match the saved XP.");
+	}
+
+	return backup.storage;
+}
+
+function restoreAdventureBackup(restoredStorage) {
+	const previousStorage = new Map(BACKUP_STORAGE_KEYS.map((key) => [key, localStorage.getItem(key)]));
+	try {
+		for (const key of BACKUP_STORAGE_KEYS) {
+			const value = restoredStorage[key];
+			if (value === null) {
+				localStorage.removeItem(key);
+			} else {
+				localStorage.setItem(key, value);
+			}
+		}
+	} catch (error) {
+		for (const [key, value] of previousStorage) {
+			try {
+				if (value === null) {
+					localStorage.removeItem(key);
+				} else {
+					localStorage.setItem(key, value);
+				}
+			} catch {
+				// Continue restoring other keys if a storage rollback operation fails.
+			}
+		}
+		throw new Error(`Could not restore the backup. Existing progress was preserved where storage allowed: ${error.message}`);
+	}
+}
+
+function exportAdventure() {
+	try {
+		const backup = createAdventureBackup();
+		const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+		const fileUrl = URL.createObjectURL(file);
+		const downloadLink = document.createElement("a");
+		downloadLink.href = fileUrl;
+		downloadLink.download = `TASKERRA-adventure-${getLocalDateString()}.json`;
+		document.body.append(downloadLink);
+		downloadLink.click();
+		downloadLink.remove();
+		window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+		showBackupStatus("Adventure backup exported successfully.");
+	} catch (error) {
+		showBackupStatus(`Backup export failed: ${error.message}`, true);
+	}
+}
+
+async function importAdventureFile(file) {
+	if (!file) {
+		return;
+	}
+	try {
+		if (file.size > 5 * 1024 * 1024) {
+			throw new Error("Backup files must be 5 MB or smaller.");
+		}
+		let backup;
+		try {
+			backup = JSON.parse(await file.text());
+		} catch {
+			throw new Error("The selected file is not valid JSON.");
+		}
+
+		const restoredStorage = validateAdventureBackup(backup);
+		const confirmed = window.confirm("Importing this backup will replace your current missions, XP, dates, and destination progress. This cannot be undone. Continue?");
+		if (!confirmed) {
+			showBackupStatus("Backup import cancelled.");
+			return;
+		}
+
+		restoreAdventureBackup(restoredStorage);
+		showBackupStatus("Adventure restored successfully. Refreshing your dashboard...");
+		window.location.reload();
+	} catch (error) {
+		showBackupStatus(`Backup import failed: ${error.message}`, true);
+	}
+}
+
 function saveCustomMissions() {
 	try {
 		localStorage.setItem(CUSTOM_MISSIONS_STORAGE_KEY, JSON.stringify(customMissions));
@@ -889,32 +1143,92 @@ function createMissionCard(mission) {
 	return item;
 }
 
-function renderMissions() {
-	const today = getLocalDateString();
-	const groups = { today: [], upcoming: [], overdue: [], completed: [] };
-	for (const mission of getMissions()) {
-		if (progress.completedMissions.includes(mission.id)) {
-			groups.completed.push(mission);
-		} else if (mission.dueDate < today) {
-			groups.overdue.push(mission);
-		} else if (mission.dueDate === today) {
-			groups.today.push(mission);
-		} else {
-			groups.upcoming.push(mission);
-		}
-	}
+	
+   function renderMissions() {
+    const today = getLocalDateString();
 
-	missionList.replaceChildren(...groups.today.map(createMissionCard));
-	upcomingMissionList.replaceChildren(...groups.upcoming.map(createMissionCard));
-	overdueMissionList.replaceChildren(...groups.overdue.map(createMissionCard));
-	completedMissionList.replaceChildren(...groups.completed.map(createMissionCard));
-	missionEmptyState.hidden = groups.today.length > 0;
-	upcomingMissionEmptyState.hidden = groups.upcoming.length > 0;
-	overdueMissionsSection.hidden = groups.overdue.length === 0;
-	completedMissionsSection.hidden = groups.completed.length === 0;
-	renderCalendar();
-	renderAdventureStatistics();
+    const searchText = missionSearch.value.trim().toLowerCase();
+    const selectedCategory = missionCategoryFilter.value;
+    const selectedStatus = missionStatusFilter.value;
+
+    const allMissions = getMissions();
+
+    const filteredMissions = allMissions.filter((mission) => {
+        const isCompleted = progress.completedMissions.includes(mission.id);
+        const isOverdue = !isCompleted && mission.dueDate < today;
+
+        const matchesSearch =
+            mission.title.toLowerCase().includes(searchText) ||
+            (mission.description || "").toLowerCase().includes(searchText);
+
+        const matchesCategory =
+            selectedCategory === "all" ||
+            mission.category === selectedCategory;
+
+        let matchesStatus = true;
+
+        if (selectedStatus === "completed") {
+            matchesStatus = isCompleted;
+        } else if (selectedStatus === "overdue") {
+            matchesStatus = isOverdue;
+        } else if (selectedStatus === "pending") {
+            matchesStatus = !isCompleted && !isOverdue;
+        }
+
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
+
+    const groups = {
+        today: [],
+        upcoming: [],
+        overdue: [],
+        completed: []
+    };
+
+    for (const mission of filteredMissions) {
+        if (progress.completedMissions.includes(mission.id)) {
+            groups.completed.push(mission);
+        } else if (mission.dueDate < today) {
+            groups.overdue.push(mission);
+        } else if (mission.dueDate === today) {
+            groups.today.push(mission);
+        } else {
+            groups.upcoming.push(mission);
+        }
+    }
+
+    missionList.replaceChildren(
+        ...groups.today.map(createMissionCard)
+    );
+
+    upcomingMissionList.replaceChildren(
+        ...groups.upcoming.map(createMissionCard)
+    );
+
+    overdueMissionList.replaceChildren(
+        ...groups.overdue.map(createMissionCard)
+    );
+
+    completedMissionList.replaceChildren(
+        ...groups.completed.map(createMissionCard)
+    );
+
+    missionEmptyState.hidden = groups.today.length > 0;
+    upcomingMissionEmptyState.hidden = groups.upcoming.length > 0;
+    overdueMissionsSection.hidden = groups.overdue.length === 0;
+    completedMissionsSection.hidden = groups.completed.length === 0;
+
+    missionFilterCount.textContent =
+        `Showing ${filteredMissions.length} of ${allMissions.length} missions`;
+
+    renderCalendar();
+    renderAdventureStatistics();
 }
+	
+
+
+	
+
 
 function saveDeletedSampleMissionIds() {
 	try {
@@ -1070,6 +1384,38 @@ closeMissionDialog.addEventListener("click", () => missionDialog.close());
 cancelMissionButton.addEventListener("click", () => missionDialog.close());
 missionForm.addEventListener("submit", addCustomMission);
 missionTitleInput.addEventListener("input", () => missionTitleInput.setCustomValidity(""));
+exportAdventureButton.addEventListener("click", exportAdventure);
+chooseBackupButton.addEventListener("click", () => backupFileInput.click());
+backupFileInput.addEventListener("change", async () => {
+	const [file] = backupFileInput.files || [];
+	backupFileInput.value = "";
+	await importAdventureFile(file);
+});
 
 renderMissions();
 updateProgressDisplay();
+missionSearch.addEventListener("input", renderMissions);
+missionCategoryFilter.addEventListener("change", renderMissions);
+missionStatusFilter.addEventListener("change", renderMissions);
+
+clearMissionFilters.addEventListener("click", () => {
+    missionSearch.value = "";
+    missionCategoryFilter.value = "all";
+    missionStatusFilter.value = "all";
+    renderMissions();
+});
+// TASKERRA Mission Search and Filters
+
+missionSearch.addEventListener("input", renderMissions);
+
+missionCategoryFilter.addEventListener("change", renderMissions);
+
+missionStatusFilter.addEventListener("change", renderMissions);
+
+clearMissionFilters.addEventListener("click", () => {
+    missionSearch.value = "";
+    missionCategoryFilter.value = "all";
+    missionStatusFilter.value = "all";
+
+    renderMissions();
+});

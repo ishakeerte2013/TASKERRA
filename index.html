@@ -58,6 +58,21 @@
 				<p id="levelUpMessage" class="level-up-message" role="status" aria-live="polite" hidden>Level Up! New adventures await!</p>
 			</section>
 
+			<section class="adventure-backup" aria-labelledby="adventureBackupTitle">
+				<div class="adventure-backup-heading">
+					<div>
+						<p class="dashboard-eyebrow">KEEP YOUR JOURNEY SAFE</p>
+						<h2 id="adventureBackupTitle">Adventure Backup</h2>
+					</div>
+					<div class="adventure-backup-actions">
+						<button id="exportAdventureButton" class="backup-button" type="button">Export My Adventure</button>
+						<button id="chooseBackupButton" class="backup-button backup-button--secondary" type="button">Import Backup</button>
+						<input id="backupFileInput" type="file" accept=".json,application/json" hidden>
+					</div>
+				</div>
+				<p id="backupStatus" class="backup-status" role="status" aria-live="polite" hidden></p>
+			</section>
+
 			<section class="missions-section" aria-labelledby="missionsTitle">
 				<div class="mission-heading-row">
 					<div class="section-heading">
@@ -109,7 +124,34 @@
 						</aside>
 					</div>
 				</section>
+<section class="mission-filters" aria-label="Search and filter missions">
+    <input
+        id="missionSearch"
+        type="search"
+        placeholder="🔎 Search your missions..."
+        aria-label="Search missions by title or description"
+    >
 
+    <select id="missionCategoryFilter" aria-label="Filter by category">
+        <option value="all">All Categories</option>
+        <option value="Study">Study</option>
+        <option value="Personal">Personal</option>
+        <option value="Fitness">Fitness</option>
+        <option value="Hobbies">Hobbies</option>
+        <option value="Other">Other</option>
+    </select>
+
+    <select id="missionStatusFilter" aria-label="Filter by status">
+        <option value="all">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="completed">Completed</option>
+        <option value="overdue">Overdue</option>
+    </select>
+
+    <button id="clearMissionFilters" type="button">Clear Filters</button>
+</section>
+
+<p id="missionFilterCount" class="mission-filter-count" aria-live="polite"></p>
 				<ul id="missionList" class="mission-list"></ul>
 				<p id="missionEmptyState" class="mission-empty-state" hidden>No missions due today. Add a mission or check your upcoming plans.</p>
 
@@ -145,15 +187,24 @@
 
 					<div class="adventure-stat-detail-grid">
 						<section class="adventure-report-panel" aria-labelledby="weeklyActivityTitle">
-							<h3 id="weeklyActivityTitle">Weekly Activity</h3>
-							<div id="weeklyActivityChart" class="weekly-activity-chart" role="group" aria-label="Missions completed this week"></div>
-							<p id="weeklyActivityEmptyState" class="statistics-empty-state" hidden>No completed missions recorded this week yet.</p>
+							<h3 id="weeklyActivityTitle">Weekly XP</h3>
+							<div id="weeklyActivityChart" class="weekly-activity-chart" role="group" aria-label="XP earned each day this week"></div>
+							<p id="weeklyActivityEmptyState" class="statistics-empty-state" hidden>No dated mission completions recorded this week yet.</p>
 						</section>
 						<section class="adventure-report-panel" aria-labelledby="categoryBreakdownTitle">
 							<h3 id="categoryBreakdownTitle">Mission Categories</h3>
 							<ul id="categoryBreakdownList" class="category-breakdown-list"></ul>
 						</section>
 					</div>
+
+					<section class="explorer-insights-panel" aria-labelledby="explorerInsightsTitle">
+						<h3 id="explorerInsightsTitle">Explorer Insights</h3>
+						<div class="explorer-insights-grid">
+							<div><span>Most-used category</span><strong id="mostUsedCategoryInsight">Not enough data yet</strong></div>
+							<div><span>Most productive weekday</span><strong id="mostProductiveWeekdayInsight">Not enough history yet</strong></div>
+							<div><span>Overall completion rate</span><strong id="overallCompletionRateInsight">0%</strong></div>
+						</div>
+					</section>
 
 					<section class="achievement-report" aria-labelledby="achievementHighlightsTitle">
 						<div>
